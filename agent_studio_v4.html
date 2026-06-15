@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Studio v4 — Milliy 3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ── DESIGN TOKENS (3 темы) ─────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--ui);font-size:13.5px;color:var(--txt);background:var(--bg);overflow:hidden;position:relative;transition:background .5s,color .4s}
+
+body[data-theme="starwars"]{
+  --bg:#03050b;--bg2:#070c18;--panel:rgba(12,24,44,.55);
+  --accent:#5cc8ff;--accent-soft:rgba(92,200,255,.12);
+  --gold:#5cc8ff;--txt:#cfe9ff;--txt2:#7fa6c9;--txt3:#47678a;
+  --line:rgba(92,200,255,.16);--line2:rgba(92,200,255,.34);
+  --done:#46e08a;--warn:#ffd84a;--err:#ff4d4d;
+  --disp:'Orbitron',sans-serif;--ui:'Rajdhani',sans-serif;--mono:'Rajdhani',sans-serif;
+  --av-radius:7px;--disp-up:uppercase;--disp-ls:.1em}
+body[data-theme="ironman"]{
+  --bg:#08090c;--bg2:#0d0f14;--panel:rgba(20,24,32,.6);
+  --accent:#4fd6ff;--accent-soft:rgba(79,214,255,.1);
+  --gold:#ffb43c;--gold2:#ffce7a;--txt:#ffe9c8;--txt2:#c9a878;--txt3:#7a6a52;
+  --line:rgba(255,180,60,.18);--line2:rgba(255,180,60,.4);
+  --done:#5fe39a;--warn:#ffb43c;--err:#ff4533;
+  --disp:'Chakra Petch',sans-serif;--ui:'Chakra Petch',sans-serif;--mono:'Share Tech Mono',monospace;
+  --av-radius:0;--disp-up:uppercase;--disp-ls:.08em}
+body[data-theme="office"]{
+  --bg:#eef1f6;--bg2:#ffffff;--panel:rgba(255,255,255,.92);
+  --accent:#2f6fed;--accent-soft:rgba(47,111,237,.1);
+  --gold:#1d2740;--txt:#1b2333;--txt2:#5a6678;--txt3:#9aa6b8;
+  --line:rgba(20,30,55,.1);--line2:rgba(20,30,55,.18);
+  --done:#1f9d57;--warn:#e08a1e;--err:#d33b3b;
+  --disp:system-ui,'Segoe UI',Roboto,sans-serif;--ui:system-ui,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,'SF Mono','Cascadia Code',monospace;
+  --av-radius:50%;--disp-up:none;--disp-ls:0}
+
+/* ── SCENE ── */
+.scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+body[data-theme="starwars"] .scene{background:radial-gradient(ellipse at 50% -10%,#0d1530,#03050b 72%)}
+body[data-theme="starwars"] .scene::before{content:'';position:absolute;inset:-50%;opacity:.5;
+  background-image:radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 60% 70%,#bfe4ff,transparent),radial-gradient(1.4px 1.4px at 80% 20%,#fff,transparent),radial-gradient(1px 1px at 40% 85%,#9fd0ff,transparent),radial-gradient(1px 1px at 12% 60%,#fff,transparent),radial-gradient(1.4px 1.4px at 90% 55%,#cdeaff,transparent);background-size:340px 340px;animation:tw 6s ease-in-out infinite}
+body[data-theme="ironman"] .scene{background:var(--bg)}
+body[data-theme="ironman"] .scene::before{content:'';position:absolute;inset:0;opacity:.4;background-image:linear-gradient(rgba(255,180,60,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,180,60,.04) 1px,transparent 1px);background-size:42px 42px}
+body[data-theme="ironman"] .scene::after{content:'';position:absolute;width:780px;height:780px;right:-260px;top:-200px;background:radial-gradient(circle,rgba(79,214,255,.13),transparent 62%);filter:blur(12px)}
+.scene .glow2{display:none}
+body[data-theme="ironman"] .scene .glow2{display:block;position:absolute;width:720px;height:720px;left:-260px;bottom:-220px;background:radial-gradient(circle,rgba(255,180,60,.12),transparent 62%);filter:blur(12px)}
+body[data-theme="office"] .scene{background:linear-gradient(180deg,#f4f6fa,#e8ecf3)}
+body[data-theme="office"] .scene::before{content:'';position:absolute;inset:0;opacity:.55;background-image:radial-gradient(rgba(20,30,55,.05) 1px,transparent 1px);background-size:22px 22px}
+@keyframes tw{0%,100%{opacity:.45}50%{opacity:.2}}
+
+/* ── SWITCHER ── */
+.switcher{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:4px;padding:5px;border-radius:40px;border:1px solid var(--line2);background:rgba(8,10,18,.72);backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.sw-btn{display:flex;align-items:center;gap:8px;padding:7px 16px;border-radius:30px;cursor:pointer;border:1px solid transparent;font-family:var(--ui);font-size:12.5px;font-weight:600;color:var(--txt2);letter-spacing:.04em;transition:.18s;white-space:nowrap;user-select:none}
+.sw-btn:hover{color:var(--txt)}
+.sw-btn .ic{font-size:14px}
+.sw-btn.active{color:var(--txt);border-color:var(--line2);background:linear-gradient(180deg,var(--accent-soft),transparent);box-shadow:0 0 16px var(--accent-soft)}
+.sw-sound{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:14px;color:var(--txt2);border:1px solid transparent;margin-left:3px;transition:.15s;user-select:none}
+.sw-sound:hover{color:var(--txt);background:var(--accent-soft)}
+.sw-sound.off{opacity:.45}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:2;display:flex;width:100vw;height:calc(100vh - 58px);margin-top:58px}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--line2),transparent);flex-shrink:0}
+
+/* sidebar */
+.sidebar{width:252px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:linear-gradient(180deg,color-mix(in srgb,var(--bg2) 86%,transparent),color-mix(in srgb,var(--bg) 86%,transparent))}
+.logo{display:flex;align-items:center;gap:12px;padding:16px 16px 15px}
+.logo-mark{width:36px;height:36px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2);background:radial-gradient(circle,var(--accent-soft),transparent 70%);box-shadow:0 0 14px var(--accent-soft);font-size:16px;color:var(--accent)}
+.logo-mark::after{content:'';position:absolute;width:44px;height:44px;border-radius:50%;border:1px dashed var(--line);animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.logo-t{font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:var(--disp-ls);color:var(--gold);text-transform:var(--disp-up);line-height:1.05}
+.logo-s{font-family:var(--mono);font-size:9px;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.paneh{display:flex;align-items:baseline;justify-content:space-between;padding:13px 16px 7px}
+.panet{font-family:var(--disp);font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;font-weight:600}
+.panec{font-family:var(--mono);font-size:10px;color:var(--done);letter-spacing:.1em}
+.agents{padding:2px 10px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:42%}
+.arts-pane{padding:2px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;flex:1;min-height:0}
+.agent{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:9px;cursor:pointer;position:relative;border:1px solid transparent;transition:.16s}
+.agent:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.agent.active{background:linear-gradient(90deg,color-mix(in srgb,var(--c,var(--accent)) 15%,transparent),transparent);border-color:color-mix(in srgb,var(--c,var(--accent)) 36%,transparent)}
+.agent.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2.5px;border-radius:3px;background:var(--c,var(--accent));box-shadow:0 0 9px var(--c,var(--accent))}
+.agent-i{flex:1;min-width:0}
+.agent-n{font-family:var(--disp);font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em;text-transform:var(--disp-up)}
+body[data-theme="ironman"] .agent-n{color:var(--gold2)}
+.agent-r{font-family:var(--mono);font-size:10px;color:var(--txt3);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.agent.team .av{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.art{display:flex;align-items:center;gap:10px;padding:6px 9px;border-radius:7px;cursor:pointer;transition:.15s;border:1px solid transparent}
+.art:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.art.done{border-color:color-mix(in srgb,var(--done) 26%,transparent)}
+.art-no{font-family:var(--mono);font-size:9.5px;color:var(--txt3);letter-spacing:.05em;min-width:34px}
+.art.done .art-no{color:var(--gold)}
+.art-mk{width:12px;height:12px;flex-shrink:0;background:color-mix(in srgb,var(--txt3) 30%,transparent);border:1px solid var(--txt3)}
+body[data-theme="ironman"] .art-mk{clip-path:polygon(50% 0,100% 26%,100% 74%,50% 100%,0 74%,0 26%)}
+body[data-theme="starwars"] .art-mk{transform:rotate(45deg);border-radius:2px}
+body[data-theme="office"] .art-mk{border-radius:50%}
+.art.done .art-mk{background:linear-gradient(135deg,color-mix(in srgb,var(--done) 60%,#000),color-mix(in srgb,var(--done) 20%,#000));border-color:var(--done);box-shadow:0 0 8px color-mix(in srgb,var(--done) 50%,transparent)}
+.art-n{flex:1;font-size:12px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art.done .art-n{color:color-mix(in srgb,var(--done) 80%,var(--txt))}
+
+/* avatar */
+.av{width:34px;height:34px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;color:var(--c,var(--accent));border:1px solid color-mix(in srgb,var(--c,var(--accent)) 42%,transparent);background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--c,var(--accent)) 22%,transparent),color-mix(in srgb,var(--bg) 80%,transparent));box-shadow:0 0 10px color-mix(in srgb,var(--c,var(--accent)) 22%,transparent);overflow:hidden;border-radius:var(--av-radius)}
+.av .mono{font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.02em;color:var(--c,var(--accent))}
+.hero .av .mono{font-size:15px}.seat .av .mono{font-size:11px}.msgav .mono{font-size:13px}
+body[data-theme="ironman"] .av{clip-path:polygon(50% 0,100% 26%,100% 74%,50% 100%,0 74%,0 26%);border-radius:0}
+body[data-theme="starwars"] .av::after{content:'';position:absolute;left:0;right:0;height:2px;background:color-mix(in srgb,var(--c,var(--accent)) 55%,transparent);animation:scan 2.4s linear infinite}
+@keyframes scan{0%{top:-2px}100%{top:36px}}
+body[data-theme="office"] .av{background:color-mix(in srgb,var(--c,var(--accent)) 14%,#fff);border:1px solid color-mix(in srgb,var(--c,var(--accent)) 32%,transparent);box-shadow:none}
+
+/* status pip */
+.st{width:7px;height:13px;border-radius:3px;flex-shrink:0;background:var(--c,var(--accent));box-shadow:0 0 7px var(--c,var(--accent))}
+body[data-theme="ironman"] .st{width:8px;height:8px;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.st.idle{background:var(--txt3);box-shadow:none;opacity:.5}
+.st.done{background:var(--done);box-shadow:0 0 7px var(--done)}
+.st.live{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:14px 22px;flex-shrink:0}
+.topbar>div:first-child{flex:1;min-width:0}
+.tb-t{font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:var(--disp-ls);color:var(--gold);text-transform:var(--disp-up);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-s{font-family:var(--mono);font-size:10px;color:var(--txt3);letter-spacing:.06em;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.target{margin-left:auto;display:flex;align-items:center;gap:8px;padding:6px 15px;font-size:11px;letter-spacing:.08em;white-space:nowrap;text-transform:uppercase;color:var(--accent);border:1px solid var(--line2);background:var(--accent-soft);border-radius:30px}
+body[data-theme="ironman"] .target{border-radius:0;clip-path:polygon(9px 0,100% 0,100% 100%,0 100%,0 9px)}
+.hbtn{padding:7px 15px;border:1px solid var(--line2);background:transparent;color:var(--gold);font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.08em;cursor:pointer;text-transform:uppercase;border-radius:30px}
+body[data-theme="ironman"] .hbtn{border-radius:0;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 0)}
+@keyframes stopBlink{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 10px rgba(239,68,68,.5)}}
+.hbtn.go{background:linear-gradient(180deg,var(--gold),color-mix(in srgb,var(--gold) 70%,#000));border-color:var(--gold);color:#11100a;box-shadow:0 0 16px var(--accent-soft)}
+
+/* pipeline */
+.pipe{display:flex;align-items:center;gap:5px;padding:11px 22px;overflow-x:auto;flex-shrink:0}
+.pipe::-webkit-scrollbar{height:0}
+.pnode{display:flex;align-items:center;gap:7px;padding:5px 13px;white-space:nowrap;font-family:var(--ui);font-size:11px;color:var(--txt3);letter-spacing:.05em;border:1px solid var(--line);background:color-mix(in srgb,var(--bg2) 60%,transparent);border-radius:30px;transition:all .3s}
+body[data-theme="ironman"] .pnode{border-radius:0;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 0)}
+.pnode.done{border-color:color-mix(in srgb,var(--done) 50%,transparent);color:color-mix(in srgb,var(--done) 85%,var(--txt));background:color-mix(in srgb,var(--done) 8%,transparent)}
+.pnode.run{border-color:var(--warn);color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--warn) 28%,transparent)}
+.pnode.error{border-color:var(--err);color:var(--err);background:color-mix(in srgb,var(--err) 8%,transparent)}
+.pdot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.pnode.run .pdot{animation:pulse .9s infinite}
+.parr{color:var(--txt3);font-size:12px}
+
+/* chat */
+.chatwrap{flex:1;display:flex;min-height:0}
+.chat{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;overflow:hidden;--ac:var(--accent)}
+.chat::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .5s;background:radial-gradient(ellipse at 30% 0%,color-mix(in srgb,var(--ac) 16%,transparent),transparent 60%)}
+.chat[data-mode="single"]::before{opacity:1}
+.stream{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:16px;position:relative;z-index:1}
+.stream::-webkit-scrollbar{width:3px}.stream::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+.sep{display:flex;align-items:center;gap:12px;color:var(--ac);font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase}
+.sep::before,.sep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ac) 40%,transparent),transparent)}
+.msg{display:flex;gap:12px}
+.msg.me{flex-direction:row-reverse}
+.msgav{width:36px;height:36px}
+.msgav.user{display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:15px;color:var(--txt2);border:1px solid var(--line2);background:color-mix(in srgb,var(--txt3) 18%,transparent)}
+.mb{max-width:76%}
+.mh{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.msg.me .mh{flex-direction:row-reverse}
+.mn{font-family:var(--disp);font-size:11.5px;font-weight:600;color:var(--c,var(--ac));letter-spacing:.05em;text-transform:var(--disp-up)}
+.mt{font-family:var(--mono);font-size:9.5px;color:var(--txt3)}
+.mtag{font-size:8.5px;padding:2px 8px;border-radius:30px;letter-spacing:.08em;text-transform:uppercase}
+.mtag.art{background:color-mix(in srgb,var(--done) 16%,transparent);color:var(--done)}
+.mtag.rev{background:color-mix(in srgb,var(--err) 16%,transparent);color:var(--err)}
+.mtag.fix{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.bub{background:color-mix(in srgb,var(--bg2) 70%,transparent);border:1px solid var(--line);border-radius:12px;padding:11px 15px;font-size:13.5px;line-height:1.62;color:var(--txt);word-break:break-word}
+body[data-theme="ironman"] .bub{border-radius:0;clip-path:none}
+.msg.me .bub{background:color-mix(in srgb,var(--accent) 11%,transparent);border-color:var(--line2)}
+.bub strong{color:var(--gold);font-weight:600}
+.bub h4{font-size:13px;font-weight:600;color:var(--gold);margin:8px 0 3px}
+.bub h4:first-child{margin-top:0}
+.bub pre{background:rgba(0,0,0,.35);border-radius:6px;padding:9px 11px;margin:7px 0;overflow-x:auto;font-family:var(--mono);font-size:11px;line-height:1.5}
+.bub code{font-family:var(--mono);font-size:11px;background:rgba(0,0,0,.25);padding:1px 4px;border-radius:3px}
+.bub table{width:100%;border-collapse:collapse;font-size:11px;margin:6px 0}
+.bub th{background:rgba(255,255,255,.05);padding:4px 7px;text-align:left;border:0.5px solid var(--line2);font-weight:600}
+.bub td{padding:3px 7px;border:0.5px solid var(--line);color:var(--txt2);vertical-align:top}
+.bub ul{padding-left:16px;margin:4px 0}
+.bub li{margin-bottom:2px}
+.bub p{margin-bottom:5px}
+.bub p:last-child{margin-bottom:0}
+.bub hr{border:none;border-top:0.5px solid var(--line2);margin:8px 0}
+.bub .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{padding:3px 12px;border-radius:30px;border:1px solid color-mix(in srgb,var(--done) 40%,transparent);font-size:11px;color:var(--done);background:color-mix(in srgb,var(--done) 7%,transparent);white-space:nowrap;font-family:var(--mono)}
+.chat[data-mode="single"] .msg.focus .bub{border-color:color-mix(in srgb,var(--ac) 50%,transparent);box-shadow:0 0 22px color-mix(in srgb,var(--ac) 18%,transparent);background:color-mix(in srgb,var(--ac) 9%,transparent)}
+/* thinking dots */
+.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--txt3);animation:dotpop 1.2s infinite;margin-right:3px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotpop{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+/* final pkg */
+.pkg-block{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,transparent),color-mix(in srgb,var(--done) 7%,transparent));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:12px;padding:14px 16px;margin-top:10px}
+.pkg-title{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;font-family:var(--disp);letter-spacing:.04em;text-transform:var(--disp-up)}
+.pkg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.pkg-item{background:color-mix(in srgb,var(--bg2) 70%,transparent);border:0.5px solid var(--line2);border-radius:6px;padding:6px 9px;font-size:10px;color:var(--done);font-family:var(--mono)}
+.pkg-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pkg-btn{flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--line2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer;transition:all .12s;font-family:var(--ui);min-width:100px}
+.pkg-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pkg-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* rail */
+.rail{width:288px;flex-shrink:0;border-left:1px solid var(--line);display:flex;flex-direction:column;background:linear-gradient(180deg,color-mix(in srgb,var(--bg2) 82%,transparent),color-mix(in srgb,var(--bg) 82%,transparent))}
+.railh{padding:15px 18px 4px;font-family:var(--disp);font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+.railsub{padding:0 18px 8px;font-family:var(--ui);font-size:13px;color:var(--txt2)}
+.assembly{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:0}
+.aring{width:200px;height:200px;border-radius:50%;position:relative;border:1px solid var(--line)}
+.aring::before{content:'';position:absolute;inset:26px;border-radius:50%;border:1px dashed var(--line);animation:spin 30s linear infinite}
+.core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--disp);font-size:10px;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;background:radial-gradient(circle,var(--accent-soft),transparent 72%);border:1px solid var(--line2);box-shadow:0 0 20px var(--accent-soft)}
+body[data-theme="ironman"] .core{background:radial-gradient(circle,#dff6ff,#4fd6ff 36%,#0a3a4d 70%,#04141c 100%);color:#04141c;font-weight:700;font-size:15px;box-shadow:0 0 30px rgba(79,214,255,.6),inset 0 0 10px rgba(255,255,255,.5);border:none;animation:reactorPulse 2.4s ease-in-out infinite}
+@keyframes reactorPulse{0%,100%{box-shadow:0 0 26px rgba(79,214,255,.5),inset 0 0 10px rgba(255,255,255,.5)}50%{box-shadow:0 0 44px rgba(79,214,255,.9),inset 0 0 16px rgba(255,255,255,.75)}}
+body[data-theme="ironman"] .aring::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid var(--line2);border-top-color:var(--accent);border-right-color:var(--accent);animation:spin 8s linear infinite}
+.seat{position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px;display:flex;align-items:center;justify-content:center}
+.seat .av{width:30px;height:30px}
+.railcap{padding:6px 18px 12px;font-family:var(--ui);font-size:12.5px;color:var(--txt2);text-align:center;line-height:1.5}
+.coords{padding:4px 18px 16px;display:flex;flex-direction:column}
+.crow{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--txt2);padding:6px 0;border-top:1px solid var(--line);text-transform:uppercase;white-space:nowrap}
+.crow span{overflow:hidden;text-overflow:ellipsis}.crow b{white-space:nowrap;flex-shrink:0}
+.crow b{color:var(--gold);font-weight:600}
+.crow .ok{color:var(--done)}
+/* office rail */
+.statcard{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:18px;padding:14px 18px 8px;min-height:0}
+.donut{width:148px;height:148px;position:relative;flex-shrink:0}
+.donut svg{transform:rotate(-90deg)}
+.donut .ring-bg{stroke:var(--line2)}
+.donut .ring-fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .6s}
+.donut .pctc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut .pctc b{font-weight:700;font-size:30px;color:var(--txt);line-height:1}
+.donut .pctc small{font-size:9.5px;font-weight:600;color:var(--txt3);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.statlegend{width:100%;display:flex;flex-direction:column;gap:9px}
+.statrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--txt2)}
+.statrow .sdot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.statrow b{margin-left:auto;color:var(--txt);font-weight:700}
+
+/* dock */
+.dock{padding:14px 22px;flex-shrink:0}
+.dockin{display:flex;align-items:flex-end;gap:12px;padding:10px 16px;border:1px solid var(--line2);background:color-mix(in srgb,var(--bg2) 70%,transparent);border-radius:14px;transition:border-color .15s}
+.dockin:focus-within{border-color:var(--accent)}
+body[data-theme="ironman"] .dockin{border-radius:0;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 0)}
+.dock-ta{flex:1;background:none;border:none;outline:none;color:var(--txt);font-family:var(--ui);font-size:13px;resize:none;max-height:100px;line-height:1.5;min-height:22px}
+.dock-ta::placeholder{color:var(--txt3)}
+body[data-theme="office"] .dock-ta{font-size:14px}
+.send{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#11100a;font-size:15px;background:linear-gradient(180deg,var(--gold),color-mix(in srgb,var(--gold) 68%,#000));box-shadow:0 0 14px var(--accent-soft);border-radius:9px;cursor:pointer;transition:opacity .15s;border:none}
+body[data-theme="ironman"] .send{clip-path:polygon(50% 0,100% 26%,100% 74%,50% 100%,0 74%,0 26%);border-radius:0}
+.send:disabled{opacity:.35;cursor:not-allowed}
+body[data-theme="office"] .send{background:var(--accent);box-shadow:0 2px 8px rgba(47,111,237,.3)}
+.hint{margin-top:8px;font-family:var(--mono);font-size:9.5px;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase}
+
+/* chat scene bg */
+.chatbg{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.chatbg.sw .planet{position:absolute;width:360px;height:360px;border-radius:50%;right:-120px;bottom:-140px;opacity:.6;background:radial-gradient(circle at 34% 30%,#1d3c5c,#0a1626 72%);box-shadow:inset 22px -14px 50px rgba(0,0,0,.6),-12px 0 70px rgba(92,200,255,.16)}
+.chatbg.sw .cruiser{position:absolute;left:33%;top:55%;width:430px;height:56px;opacity:.42;background:linear-gradient(180deg,#56708a 0%,#27384a 55%,#0e1a28 100%);border-radius:30px/14px;box-shadow:0 0 28px rgba(92,200,255,.28)}
+.chatbg.sw .streaks i{position:absolute;height:1.5px;width:130px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(165,218,255,.6));animation:warp 2.8s linear infinite}
+.chatbg.sw .streaks i:nth-child(1){top:18%;animation-delay:0s}.chatbg.sw .streaks i:nth-child(2){top:46%;animation-delay:.9s}.chatbg.sw .streaks i:nth-child(3){top:68%;animation-delay:1.5s}.chatbg.sw .streaks i:nth-child(4){top:84%;animation-delay:2.1s}
+@keyframes warp{0%{transform:translateX(42vw);opacity:0}12%{opacity:1}100%{transform:translateX(-66vw);opacity:0}}
+.chatbg.im .reactor{position:absolute;left:52%;top:50%;transform:translate(-50%,-50%);width:400px;height:400px;opacity:.34}
+.chatbg.im .rr{position:absolute;border-radius:50%;border:2px solid rgba(79,214,255,.32)}
+.chatbg.im .rr.r1{inset:0}.chatbg.im .rr.r2{inset:50px;border-width:1px;border-color:rgba(79,214,255,.26)}.chatbg.im .rr.r3{inset:152px;border:1px solid rgba(79,214,255,.5)}
+.chatbg.im .spokes{position:absolute;inset:72px;border-radius:50%;animation:spin 30s linear infinite;background:repeating-conic-gradient(rgba(79,214,255,.22) 0 3deg,transparent 3deg 15deg);-webkit-mask:radial-gradient(circle,transparent 52%,#000 53% 78%,transparent 79%);mask:radial-gradient(circle,transparent 52%,#000 53% 78%,transparent 79%)}
+.chatbg.im .tri{position:absolute;inset:142px;clip-path:polygon(50% 6%,94% 90%,6% 90%);background:radial-gradient(circle at 50% 62%,rgba(150,235,255,.55),rgba(79,214,255,.12));box-shadow:0 0 50px rgba(79,214,255,.4)}
+.chatbg.im .rcore{position:absolute;inset:170px;border-radius:50%;background:radial-gradient(circle,#dff6ff,#4fd6ff 48%,#0a3a4d 85%);box-shadow:0 0 70px rgba(79,214,255,.6);animation:reactorPulse 2.6s ease-in-out infinite}
+/* scan sweep */
+body[data-theme="starwars"] .chat::after,body[data-theme="ironman"] .chat::after{content:'';position:absolute;left:0;right:0;top:0;height:140px;pointer-events:none;z-index:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--accent) 9%,transparent),transparent);animation:sweep 7s linear infinite}
+@keyframes sweep{0%{transform:translateY(-140px)}100%{transform:translateY(100%)}}
+/* ironman animations */
+body[data-theme="ironman"] .target{animation:hudBlink 3s ease-in-out infinite}
+@keyframes hudBlink{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 14px var(--accent-soft)}}
+/* SW holoflicker */
+body[data-theme="starwars"] .av{animation:holoFlicker 5.5s infinite}
+@keyframes holoFlicker{0%,42%,46%,100%{filter:none}44%{filter:brightness(1.25) saturate(1.2)}45%{filter:brightness(.8)}}
+body[data-theme="starwars"] .agent.active .av{animation:holoFlicker 5.5s infinite,holoPulse 1.8s ease-in-out infinite}
+@keyframes holoPulse{0%,100%{box-shadow:0 0 12px color-mix(in srgb,var(--c,var(--accent)) 45%,transparent)}50%{box-shadow:0 0 24px color-mix(in srgb,var(--c,var(--accent)) 80%,transparent)}}
+/* office overrides */
+body[data-theme="office"] .switcher{background:rgba(255,255,255,.9);border-color:var(--line2);box-shadow:0 6px 24px rgba(20,30,55,.12)}
+body[data-theme="office"] .sidebar{background:#fff;box-shadow:1px 0 0 var(--line)}
+body[data-theme="office"] .rail{background:#fff}
+body[data-theme="office"] .bub{background:#fff;box-shadow:0 1px 3px rgba(20,30,55,.07)}
+body[data-theme="office"] .msg.me .bub{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+body[data-theme="office"] .pnode{background:#fff}
+body[data-theme="office"] .hbtn.go,body[data-theme="office"] .send{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(47,111,237,.3)}
+body[data-theme="office"] .dockin{background:#fff;box-shadow:0 1px 3px rgba(20,30,55,.06)}
+
+/* archive modal */
+.arch-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
+.arch-overlay.open{display:flex}
+.arch-modal{background:var(--bg2);border:0.5px solid var(--line2);border-radius:12px;width:820px;max-width:95vw;height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.arch-modal-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.arch-modal-title{font-size:14px;font-weight:600;flex:1;font-family:var(--disp);color:var(--gold);text-transform:var(--disp-up)}
+.arch-search{background:var(--bg);border:0.5px solid var(--line2);border-radius:6px;padding:5px 10px;color:var(--txt);font-size:12px;font-family:var(--ui);outline:none;width:200px}
+.arch-search:focus{border-color:var(--accent)}
+.arch-close{padding:5px 10px;border-radius:6px;border:0.5px solid var(--line2);background:transparent;color:var(--txt2);font-size:12px;cursor:pointer;font-family:var(--ui)}
+.arch-body{flex:1;display:flex;overflow:hidden}
+.arch-list{width:280px;border-right:1px solid var(--line);overflow-y:auto;flex-shrink:0;padding:8px}
+.arch-item{padding:9px 10px;border-radius:6px;cursor:pointer;border:0.5px solid transparent;margin-bottom:4px;transition:background .12s}
+.arch-item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.arch-item.selected{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.arch-item-query{font-size:11px;font-weight:500;color:var(--txt);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arch-item-meta{font-size:10px;color:var(--txt3);display:flex;justify-content:space-between}
+.arch-item-del{font-size:10px;color:var(--err);opacity:0;cursor:pointer;padding:0 4px}
+.arch-item:hover .arch-item-del{opacity:.6}
+.arch-detail{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.arch-detail-header{padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.arch-detail-query{font-size:12px;font-weight:500;color:var(--txt);margin-bottom:4px}
+.arch-detail-meta{font-size:10px;color:var(--txt3)}
+.arch-art-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:8px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.arch-art-tab{padding:3px 9px;border-radius:4px;border:0.5px solid var(--line2);font-size:10px;color:var(--txt2);cursor:pointer;transition:all .12s}
+.arch-art-tab:hover{border-color:var(--line);color:var(--txt)}
+.arch-art-tab.active{background:color-mix(in srgb,var(--accent) 15%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent)}
+.arch-art-content{flex:1;overflow-y:auto;padding:12px 14px}
+.arch-art-text{font-size:11px;line-height:1.7;color:var(--txt2);white-space:pre-wrap;font-family:var(--mono)}
+.arch-art-actions{padding:8px 14px;border-top:1px solid var(--line);display:flex;gap:7px;flex-shrink:0}
+.arch-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--txt3);gap:8px;font-size:12px;text-align:center}
+.arch-load-btn{padding:6px 14px;border-radius:6px;border:0.5px solid color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);font-size:11px;cursor:pointer;font-family:var(--ui)}
+.art-dl-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--line2);background:transparent;color:var(--txt2);font-size:10px;cursor:pointer;transition:all .12s;font-family:var(--ui)}
+.art-dl-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body data-theme="ironman" data-agent="all">
+
+<!-- SVG sigils -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <g id="g-team" fill="none" stroke-width="1.6"><circle cx="8.5" cy="10" r="2.5"/><circle cx="15.5" cy="10" r="2.5"/><circle cx="12" cy="15.5" r="2.5"/></g>
+  <g id="sg-star" fill="none" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.5 L13.7 10.3 L21.5 12 L13.7 13.7 L12 21.5 L10.3 13.7 L2.5 12 L10.3 10.3 Z"/></g>
+  <g id="sg-scales" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5 V19"/><path d="M8.5 19.5 H15.5"/><circle cx="12" cy="4.2" r="1.1"/><path d="M5 8 H19"/><path d="M12 5.2 V8"/><path d="M5 8 L3 12.5 H7 Z"/><path d="M19 8 L17 12.5 H21 Z"/></g>
+  <g id="sg-compass" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.4" r="1.4"/><path d="M11.2 5.6 L6.5 19.5"/><path d="M12.8 5.6 L17.5 19.5"/><path d="M9.4 11 Q12 13 14.6 11"/></g>
+  <g id="sg-gear" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1.7"/><path d="M12 3.4 V6 M12 18 V20.6 M3.4 12 H6 M18 12 H20.6 M5.9 5.9 L7.7 7.7 M16.3 16.3 L18.1 18.1 M18.1 5.9 L16.3 7.7 M7.7 16.3 L5.9 18.1"/></g>
+  <g id="sg-shield" fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8 L19.5 5.7 V11.5 C19.5 16.4 16 19.6 12 21 C8 19.6 4.5 16.4 4.5 11.5 V5.7 Z"/><path d="M8.8 11.8 L11 14 L15.2 9.6"/></g>
+  <g id="sw-pm" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11.5" r="3.6"/><path d="M8.6 9.5 L3.5 6 L7.2 12.4"/><path d="M15.4 9.5 L20.5 6 L16.8 12.4"/><circle cx="10.7" cy="11.3" r=".55"/><circle cx="13.3" cy="11.3" r=".55"/><path d="M8.2 15.2 Q12 18.8 15.8 15.2"/></g>
+  <g id="sw-ba" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="9" r="3"/><path d="M5.4 20 Q9.5 12.8 13.6 20"/><path d="M18 4.5 V14"/><path d="M17 14.2 H19 V16.8 H17 Z"/></g>
+  <g id="sw-sa" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 8.6 Q12 6.4 15.8 8.6"/><circle cx="12" cy="11" r="3.4"/><circle cx="10.7" cy="10.7" r=".55"/><circle cx="13.3" cy="10.7" r=".55"/><path d="M9.1 12.6 Q12 17.6 14.9 12.6"/></g>
+  <g id="sw-dev" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11 A6 6 0 0 1 18 11"/><path d="M6 11 H18 V19 Q18 20.5 16.5 20.5 H7.5 Q6 20.5 6 19 Z"/><circle cx="12" cy="9.1" r="1.5"/><path d="M8.6 13.2 H15.4 M8.6 16 H15.4"/><rect x="10.4" y="17.3" width="3.2" height="2" rx=".5"/></g>
+  <g id="sw-qa" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.4 L10.2 8 H13.8 Z"/><path d="M8 8 H16 V15 Q12 21 8 15 Z"/><path d="M8.6 12.2 H15.4"/></g>
+  <g id="im-pm" fill="none" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r=".8"/><path d="M3.4 12 H6 M18 12 H20.6"/></g>
+  <g id="im-ba" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L19 7 V17 L12 21 L5 17 V7 Z"/><path d="M9 14 V10.5 M11.3 15.5 V8.5 M13.7 15.5 V8.5 M16 14 V10.5"/></g>
+  <g id="im-sa" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.7 Q12 2.6 16 4.7 L16.8 13 Q12 21 7.2 13 Z"/><path d="M9 11 L11.6 9.7"/><path d="M15 11 L12.4 9.7"/><path d="M10.5 15.2 H13.5"/></g>
+  <g id="im-dev" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21 H12"/><path d="M9 21 V16 L14 12 L12 8"/><path d="M12 8 L9.6 6 M12 8 L14.4 6"/><circle cx="9" cy="16" r="1"/></g>
+  <g id="im-qa" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 12 Q12 5.6 20.4 12 Q12 18.4 3.6 12 Z"/><circle cx="12" cy="12" r="2.6"/><path d="M12 6 V8 M12 16 V18 M6 12 H8 M16 12 H18"/></g>
+</defs>
+</svg>
+
+<div class="scene"><div class="glow2"></div></div>
+
+<div class="switcher">
+  <div class="sw-btn" data-theme="starwars"><span class="ic">⚔️</span>Звёздные войны</div>
+  <div class="sw-btn active" data-theme="ironman"><span class="ic">🦾</span>Железный человек</div>
+  <div class="sw-btn" data-theme="office"><span class="ic">💼</span>Офис</div>
+  <div class="sw-sound" id="soundToggle" title="Звук вкл/выкл">🔊</div>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="rule"></div>
+    <div class="pipe" id="pipe"></div>
+    <div class="rule"></div>
+    <div class="chatwrap">
+      <section class="chat" id="chat" data-mode="team"></section>
+      <aside class="rail" id="rail"></aside>
+    </div>
+    <div class="rule"></div>
+    <div class="dock" id="dock"></div>
+  </main>
+</div>
+
+<!-- ARCHIVE MODAL -->
+<div class="arch-overlay" id="arch-overlay" onclick="if(event.target===this)closeArchive()">
+  <div class="arch-modal">
+    <div class="arch-modal-header">
+      <span class="arch-modal-title">Архив сессий</span>
+      <input class="arch-search" id="arch-search" placeholder="Поиск..." oninput="filterArchive(this.value)">
+      <button class="arch-close" onclick="closeArchive()">✕ Закрыть</button>
+    </div>
+    <div class="arch-body">
+      <div class="arch-list" id="arch-list"><div class="arch-empty">Нет сессий</div></div>
+      <div class="arch-detail" id="arch-detail"><div class="arch-empty">← Выберите сессию</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GLYPHS ────────────────────────────────────────────────────────────────
+const GLYPH={
+  starwars:{all:'g-team',pm:'sw-pm',ba:'sw-ba',sa:'sw-sa',dev:'sw-dev',qa:'sw-qa'},
+  ironman: {all:'g-team',pm:'im-pm',ba:'im-ba',sa:'im-sa',dev:'im-dev',qa:'im-qa'},
+  office:  null
+};
+const SEAT_POS=['translate(0,-84px)','translate(80px,-26px)','translate(49px,68px)','translate(-49px,68px)','translate(-80px,-26px)'];
+const ROLES=['pm','ba','sa','dev','qa'];
+
+// ── THEME DATA ────────────────────────────────────────────────────────────
+const THEMES={
+  ironman:{
+    label:'Железный человек',icon:'🦾',
+    logo:'STARK · AGENT OS',logoSub:'MILLIY 3.0 // NBU',mark:'◈',
+    paneAgents:'Активные ИИ',paneArts:'Спецификации',
+    headTitle:'ВСЕ СИСТЕМЫ В СБОРЕ',headSub:'PM › BA › SA › DEV › QA › FIX › DEPLOY',target:'Весь массив ИИ',
+    railH:'Реактор · Сводка систем',railSub:'Энергия 94 %',core:'94%',
+    railCap:'Мощность реактора: номинал.<br>Конструктор брони на связи.',
+    coords:[['Сессия','ARC-4471'],['Канал','STARK-NET'],['Шифр','AES-256'],['Статус','● ALL SYSTEMS GO']],
+    dock:'Введите директиву, сэр…',hint:'⏎ запустить сборку',
+    agents:{
+      pm:{name:'J.A.R.V.I.S.',sub:'Оркестратор',color:'#4fd6ff',status:'idle'},
+      ba:{name:'F.R.I.D.A.Y.',sub:'Аналитика',color:'#8fe8ff',status:'idle'},
+      sa:{name:'Конструктор',sub:'Armor design',color:'#ffb43c',status:'idle'},
+      dev:{name:'Цех Дум-ботов',sub:'Fabrication',color:'#ffce7a',status:'idle'},
+      qa:{name:'E.D.I.T.H.',sub:'Diagnostics',color:'#ff6a4d',status:'idle'},
+    },
+  },
+  starwars:{
+    label:'Звёздные войны',icon:'⚔️',
+    logo:'AGENT STUDIO',logoSub:'СОВЕТ · MILLIY 3.0',mark:'⟡',
+    paneAgents:'Совет джедаев',paneArts:'Голокроны',
+    headTitle:'СОВЕТ В СБОРЕ',headSub:'PM › BA › SA › Dev › QA › фикс › утверждение',target:'Весь Орден',
+    railH:'Зал Совета',railSub:'Голопроекция',core:'ВЫСШИЙ СОВЕТ',
+    railCap:'Голографическое заседание.<br>Архитектор держит слово.',
+    coords:[['Сессия','HOLO-4471'],['Канал','HYPERSPACE'],['Шифр','JEDI-AES256'],['Статус','● связь устойчива']],
+    dock:'Передайте волю Совету, магистр…',hint:'⏎ созвать совет',
+    agents:{
+      pm:{name:'Магистр Совета',sub:'Постановка задачи',color:'#b07bff',status:'idle'},
+      ba:{name:'Джедай-консул',sub:'Бизнес-анализ',color:'#4aa8ff',status:'idle'},
+      sa:{name:'Мастер-архитектор',sub:'Системный анализ',color:'#46e08a',status:'idle'},
+      dev:{name:'Астромех R2',sub:'Разработка',color:'#9fdcff',status:'idle'},
+      qa:{name:'Храмовый страж',sub:'Тестирование',color:'#ffd84a',status:'idle'},
+    },
+  },
+  office:{
+    label:'Офис',icon:'💼',
+    logo:'Agent Studio',logoSub:'MILLIY 3.0 · NBU',mark:'▦',
+    paneAgents:'Команда',paneArts:'Документы',
+    headTitle:'Рабочее пространство',headSub:'Бриф › Анализ › Дизайн › Разработка › Тест',target:'Вся команда',
+    railH:'Сводка',railSub:'Готовность спринта',core:'',
+    railCap:'',donut:0,
+    stat:[['Готово','0','#1f9d57'],['В работе','0','#e08a1e'],['Ожидает','7','#9aa6b8']],
+    meta:[['Спринт','#24 · Карты'],['Команда','5 человек'],['Статус','● ожидание']],
+    coords:[],
+    dock:'Напишите команде…',hint:'Enter — отправить · Shift+Enter — перенос строки',
+    agents:{
+      pm:{name:'Менеджер проекта',sub:'Постановка задач',color:'#2f6fed',status:'idle',mono:'PM'},
+      ba:{name:'Бизнес-аналитик',sub:'Требования',color:'#0e9b8a',status:'idle',mono:'BA'},
+      sa:{name:'Системный аналитик',sub:'Архитектура',color:'#7a5af0',status:'idle',mono:'SA'},
+      dev:{name:'Разработчик',sub:'Реализация',color:'#e08a1e',status:'idle',mono:'DEV'},
+      qa:{name:'QA-инженер',sub:'Тестирование',color:'#d6457a',status:'idle',mono:'QA'},
+    },
+  },
+};
+
+// ── PIPELINE STAGES ───────────────────────────────────────────────────────
+const PIPELINE_STAGES=[
+  {id:'pm',     label:'PM Brief'},
+  {id:'ba',     label:'BA'},
+  {id:'sa',     label:'SA'},
+  {id:'dev',    label:'Backend'},
+  {id:'dev',    label:'Android'},
+  {id:'dev',    label:'iOS'},
+  {id:'dev',    label:'UI прото'},
+  {id:'qa',     label:'QA (22+)'},
+  {id:'dev_fix',label:'Dev фикс'},
+  {id:'sa_rev', label:'SA + OpenAPI'},
+  {id:'pm_art', label:'PM артефакты'},
+  {id:'tz_biz', label:'Бизнесовое ТЗ'},
+  {id:'pm_fin', label:'PM финал'},
+];
+
+// ── ARTIFACT DEFS ─────────────────────────────────────────────────────────
+const ARTIFACT_DEFS=[
+  {id:'brief',       name:'PM Brief',              agent:'pm'},
+  {id:'ba_full',     name:'BA Артефакт',           agent:'ba'},
+  {id:'sa_full',     name:'SA Артефакт',           agent:'sa'},
+  {id:'openapi',     name:'OpenAPI YAML',           agent:'sa'},
+  {id:'impl',        name:'Spring Boot (Backend)', agent:'dev'},
+  {id:'impl_android',name:'Android (Kotlin)',       agent:'dev'},
+  {id:'impl_ios',    name:'iOS (Swift)',             agent:'dev'},
+  {id:'proto',       name:'UI Прототип',            agent:'dev'},
+  {id:'tests',       name:'Тест-кейсы 22+',        agent:'qa'},
+  {id:'fixes',       name:'Фикс замечаний',         agent:'dev'},
+  {id:'pm_pack',     name:'PM пакет',               agent:'pm'},
+  {id:'pm_tasks',    name:'Tasks CSV',              agent:'pm'},
+  {id:'tz_biz',      name:'Бизнесовое ТЗ',         agent:'pm'},
+  {id:'protocol',    name:'Протокол согласования',  agent:'pm'},
+  {id:'final',       name:'Финальный пакет',        agent:'pm'},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let state={theme:'ironman',agent:'all'};
+let isRunning=false;
+let abortPipeline=false;
+let sessionArtifacts={};
+let pipelineState={};
+let chatHistory=[];
+let _archiveSessionData=null;
+let archiveSessions=[];
+let archiveSelectedId=null;
+let archiveSelectedArtTab=null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function escHtml(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function fmt(t){
+  const blocks=[];
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>{const i=blocks.length;blocks.push(`<pre><code>${escHtml(c.trim())}</code></pre>`);return `\x00CODE${i}\x00`;});
+  t=escHtml(t);
+  t=t.replace(/\x00CODE(\d+)\x00/g,(_,i)=>blocks[+i]??'');
+  t=t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  t=t.replace(/^#{1,4} (.+)$/gm,'<h4>$1</h4>');
+  t=t.replace(/^---$/gm,'<hr>');
+  t=t.replace(/^\|(.+)\|\n\|[-| :]+\|\n((?:\|.+\|\n?)+)/gm,(_,hdr,rows)=>{
+    const ths=hdr.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+    const trs=rows.trim().split('\n').map(r=>{const tds=r.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('');return `<tr>${tds}</tr>`;}).join('');
+    return `<table><tr>${ths}</tr>${trs}</table>`;
+  });
+  t=t.replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>').replace(/<\/ul>\s*<ul>/g,'');
+  t=t.replace(/\n{2,}/g,'</p><p>');
+  if(!t.startsWith('<')) t='<p>'+t+'</p>';
+  return t;
+}
+
+function getTime(){return new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});}
+
+function av(key,color,cls,mono){
+  const g=GLYPH[state.theme]?GLYPH[state.theme][key]:null;
+  const inner=g?`<svg class="sig" viewBox="0 0 24 24" style="width:66%;height:66%;display:block"><use href="#${g}"/></svg>`:`<span class="mono">${escHtml(mono||'')}</span>`;
+  return `<span class="av ${cls||''}" style="--c:${color}">${inner}</span>`;
+}
+
+function artNo(i){
+  const t=state.theme;
+  if(t==='ironman') return 'M·0'+(i+1);
+  if(t==='office') return 'DOC-0'+(i+1);
+  return '0'+(i+1);
+}
+
+function chatBackdrop(){
+  if(state.theme==='starwars') return `<div class="chatbg sw"><div class="planet"></div><div class="cruiser"></div><div class="streaks"><i></i><i></i><i></i><i></i></div></div>`;
+  if(state.theme==='ironman') return `<div class="chatbg im"><div class="reactor"><span class="rr r1"></span><span class="rr r2"></span><span class="rr r3"></span><span class="spokes"></span><span class="tri"></span><span class="rcore"></span></div></div>`;
+  return '';
+}
+
+// ── SOUND ─────────────────────────────────────────────────────────────────
+const Sound={
+  ctx:null,on:true,
+  init(){try{if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==='suspended')this.ctx.resume();}catch(e){}},
+  tone(freq,dur,type,gain,glideTo,delay){
+    if(!this.on||!this.ctx)return;
+    const t=this.ctx.currentTime+(delay||0);
+    const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(freq,t);
+    if(glideTo)o.frequency.exponentialRampToValueAtTime(glideTo,t+dur);
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(gain||0.07,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(this.ctx.destination);o.start(t);o.stop(t+dur+0.03);
+  },
+  play(kind){
+    this.init();
+    const sw=state.theme==='starwars',im=state.theme==='ironman';
+    if((!sw&&!im)||!this.on||!this.ctx)return;
+    if(kind==='team'){if(sw)this.tone(150,.4,'sawtooth',.06,95);else{this.tone(400,.1,'square',.05);this.tone(600,.13,'square',.05,null,.09);}}
+    else if(kind==='switch'){if(sw)this.tone(700,.13,'triangle',.05,430);else this.tone(880,.06,'square',.04);}
+    else if(kind==='done'){if(sw){this.tone(330,.16,'sawtooth',.06);this.tone(495,.32,'sawtooth',.06,null,.15);}else{this.tone(523,.12,'sine',.05);this.tone(700,.12,'sine',.05,null,.11);this.tone(940,.24,'sine',.06,null,.22);}}
+  }
+};
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render(){
+  const T=THEMES[state.theme];
+  document.body.dataset.theme=state.theme;
+  document.body.dataset.agent=state.agent;
+  document.querySelectorAll('.sw-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===state.theme));
+  renderSidebar(T);
+  renderTop(T);
+  renderPipe();
+  renderRail(T);
+  renderDock(T);
+  // chat НЕ пересоздаём если pipeline запущен — только при смене темы/агента в idle
+  if(!isRunning) renderChatEmpty();
+}
+
+function renderSidebar(T){
+  const sb=document.getElementById('sidebar');
+  const doneCount=Object.keys(sessionArtifacts).length;
+  let agents=`<div class="agent team ${state.agent==='all'?'active':''}" data-id="all" style="--c:${T.agents.pm.color}">
+    ${av('all',T.agents.pm.color,'','Вс')}
+    <div class="agent-i"><div class="agent-n">Вся команда</div><div class="agent-r">Полный pipeline</div></div>
+    <span class="st live"></span></div>`;
+  ROLES.forEach(r=>{
+    const a=T.agents[r];
+    const st=a.status;
+    agents+=`<div class="agent ${state.agent===r?'active':''}" data-id="${r}" style="--c:${a.color}">
+      ${av(r,a.color,'',a.mono)}
+      <div class="agent-i"><div class="agent-n">${escHtml(a.name)}</div><div class="agent-r">${r.toUpperCase()} · ${escHtml(a.sub)}</div></div>
+      <span class="st ${st}"></span></div>`;
+  });
+  let arts='';
+  ARTIFACT_DEFS.forEach((def,i)=>{
+    const done=!!sessionArtifacts[def.id];
+    arts+=`<div class="art ${done?'done':''}" data-id="${def.id}"><span class="art-no">${artNo(i)}</span><span class="art-mk"></span><span class="art-n">${escHtml(def.name)}</span></div>`;
+  });
+  sb.innerHTML=`
+    <div class="logo"><div class="logo-mark" style="position:relative">${escHtml(T.mark)}</div>
+      <div><div class="logo-t">${escHtml(T.logo)}</div><div class="logo-s">${escHtml(T.logoSub)}</div></div></div>
+    <div class="rule"></div>
+    <div class="paneh"><span class="panet">${escHtml(T.paneAgents)}</span><span class="panec">5 онлайн</span></div>
+    <div class="agents">${agents}</div>
+    <div class="rule"></div>
+    <div class="paneh"><span class="panet">${escHtml(T.paneArts)}</span><span class="panec" id="art-count-label">${doneCount} / ${ARTIFACT_DEFS.length}</span></div>
+    <div class="arts-pane">${arts}</div>`;
+  sb.querySelectorAll('.agent').forEach(el=>el.addEventListener('click',()=>{
+    if(isRunning) return;
+    const id=el.dataset.id;
+    if(id!==state.agent) Sound.play(id==='all'?'team':'switch');
+    state.agent=id; render();
+  }));
+  sb.querySelectorAll('.art[data-id]').forEach(el=>el.addEventListener('click',()=>{
+    const id=el.dataset.id;
+    if(sessionArtifacts[id]) showArtifactModal(id);
+  }));
+}
+
+function renderTop(T){
+  const top=document.getElementById('topbar');
+  const single=state.agent!=='all';
+  const a=single?T.agents[state.agent]:null;
+  top.innerHTML=`
+    <div><div class="tb-t">${escHtml(single?a.name:T.headTitle)}</div>
+      <div class="tb-s">${escHtml(single?(state.agent.toUpperCase()+' · '+a.sub):T.headSub)}</div></div>
+    <div class="target" ${single?`style="color:${a.color};border-color:${a.color}66;background:${a.color}1a"`:''}>${escHtml(single?a.name:T.target)}</div>
+    <button class="hbtn" onclick="openArchive()">Архив</button>
+    <button class="hbtn" id="stop-btn" style="display:none;border-color:var(--err);color:var(--err);animation:stopBlink .8s ease-in-out infinite" onclick="stopPipeline()">⏹ Стоп</button>
+    <button class="hbtn go" id="export-btn" disabled>Пакет</button>`;
+  document.getElementById('export-btn').disabled=!Object.keys(sessionArtifacts).length;
+  document.getElementById('export-btn').onclick=()=>{exportPackage();Sound.play('done');};
+}
+
+function renderPipe(){
+  const pipe=document.getElementById('pipe');
+  pipe.innerHTML=PIPELINE_STAGES.map((s,i)=>{
+    const st=pipelineState[s.id+':'+s.label]||'';
+    return (i>0?'<span class="parr">›</span>':'')+`<div class="pnode ${st}" id="pn-${s.id}-${i}"><span class="pdot"></span>${escHtml(s.label)}</div>`;
+  }).join('');
+}
+
+function updatePipelineNode(label,status){
+  PIPELINE_STAGES.forEach((s,i)=>{
+    if(s.label===label){
+      const el=document.getElementById(`pn-${s.id}-${i}`);
+      if(el){el.className='pnode '+status;}
+      pipelineState[s.id+':'+s.label]=status;
+    }
+  });
+}
+
+function renderRail(T){
+  const rail=document.getElementById('rail');
+  const single=state.agent!=='all';
+  if(state.theme==='office'){
+    const done=Object.keys(sessionArtifacts).length;
+    const total=ARTIFACT_DEFS.length;
+    const pct=Math.round(done/total*100)||0;
+    const C=2*Math.PI*52,off=C*(1-pct/100);
+    rail.innerHTML=`
+      <div class="railh">${escHtml(T.railH)}</div>
+      <div class="railsub">${single?('Чат · '+T.agents[state.agent].name):T.railSub}</div>
+      <div class="statcard">
+        <div class="donut"><svg width="148" height="148" viewBox="0 0 148 148">
+          <circle class="ring-bg" cx="74" cy="74" r="52" fill="none" stroke-width="12"></circle>
+          <circle class="ring-fg" cx="74" cy="74" r="52" fill="none" stroke-width="12" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"></circle>
+        </svg><div class="pctc"><b>${pct}%</b><small>готовность</small></div></div>
+        <div class="statlegend">
+          <div class="statrow"><span class="sdot" style="background:#1f9d57"></span>Готово<b>${done}</b></div>
+          <div class="statrow"><span class="sdot" style="background:#e08a1e"></span>В работе<b>${isRunning?'1':'0'}</b></div>
+          <div class="statrow"><span class="sdot" style="background:#9aa6b8"></span>Ожидает<b>${total-done}</b></div>
+        </div>
+        <div class="coords">${T.meta.map(c=>`<div class="crow"><span>${escHtml(c[0])}</span><b class="${c[1].startsWith('●')?'ok':''}">${escHtml(c[1])}</b></div>`).join('')}</div>
+      </div>`;
+    return;
+  }
+  let seats='';
+  ROLES.forEach((r,i)=>{const a=T.agents[r];seats+=`<div class="seat" style="transform:translate(-50%,-50%) ${SEAT_POS[i]}">${av(r,a.color,'',a.mono)}</div>`;});
+  const cap=single?`Соло-сеанс · <b style="color:${T.agents[state.agent].color}">${escHtml(T.agents[state.agent].name)}</b>`:T.railCap;
+  rail.innerHTML=`
+    <div class="railh">${escHtml(T.railH)}</div>
+    <div class="railsub">${escHtml(T.railSub)}</div>
+    <div class="assembly"><div class="aring"><div class="core">${escHtml(T.core||'')}</div>${seats}</div></div>
+    <div class="railcap">${cap}</div>
+    <div class="coords">${T.coords.map(c=>`<div class="crow"><span>${escHtml(c[0])}</span><b class="${c[1].startsWith('●')?'ok':''}">${escHtml(c[1])}</b></div>`).join('')}</div>`;
+}
+
+function renderDock(T){
+  const dock=document.getElementById('dock');
+  dock.innerHTML=`
+    <div class="dockin">
+      <textarea class="dock-ta" id="dock-input" rows="1" placeholder="${escHtml(T.dock)}" ${isRunning?'disabled':''}></textarea>
+      <button class="send" id="send-btn" ${isRunning?'disabled':''}  title="Отправить">➤</button>
+    </div>
+    <div class="hint">${escHtml(T.hint)}</div>`;
+  const ta=document.getElementById('dock-input');
+  const btn=document.getElementById('send-btn');
+  if(ta) ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+  if(ta) ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,100)+'px';});
+  if(btn) btn.addEventListener('click',()=>{Sound.play('team');sendMessage();});
+}
+
+function renderChatEmpty(){
+  const chat=document.getElementById('chat');
+  chat.style.setProperty('--ac','var(--accent)');
+  chat.dataset.mode='team';
+  chat.innerHTML=`${chatBackdrop()}
+  <div class="stream" id="stream">
+    <div class="sep">Milliy 3.0 · Agent Studio v4</div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--txt3);gap:10px;padding:40px;text-align:center">
+      <div style="font-size:32px;opacity:.3">🚀</div>
+      <div style="font-family:var(--disp);font-size:15px;color:var(--txt2);text-transform:var(--disp-up);letter-spacing:var(--disp-ls)">Команда готова к работе</div>
+      <div style="font-size:12px;line-height:1.6;max-width:360px">Опишите задачу — агенты пройдут полный цикл и соберут пакет артефактов</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:8px">
+        ${['P2P перевод карта → карта','Блокировка карты','История транзакций','OTP авторизация','Открытие вклада'].map(q=>`<div onclick="usePrompt('${q}')" style="padding:5px 13px;border-radius:20px;border:0.5px solid var(--line2);font-size:11px;color:var(--txt2);cursor:pointer;transition:all .12s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--line2)';this.style.color='var(--txt2)'">${q}</div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function usePrompt(t){
+  const ta=document.getElementById('dock-input');
+  if(ta){ta.value=t;ta.focus();}
+}
+
+// ── CHAT STREAM helpers ───────────────────────────────────────────────────
+function getOrCreateStream(){
+  let s=document.getElementById('stream');
+  if(!s){
+    const chat=document.getElementById('chat');
+    chat.innerHTML=chatBackdrop();
+    s=document.createElement('div');
+    s.className='stream'; s.id='stream';
+    chat.appendChild(s);
+  }
+  return s;
+}
+
+function addSep(label){
+  const s=getOrCreateStream();
+  const d=document.createElement('div');
+  d.className='sep'; d.textContent=label;
+  s.appendChild(d); s.scrollTop=s.scrollHeight;
+}
+
+function addMsg(agentId,html,tag){
+  const T=THEMES[state.theme];
+  const s=getOrCreateStream();
+  const isUser=agentId==='user';
+  const a=isUser?{name:'Игорь',color:'var(--txt2)',mono:'И'}:T.agents[agentId]||{name:agentId,color:'var(--accent)',mono:'?'};
+  const tagHtml=tag?`<span class="mtag ${tag}">${tag==='art'?'артефакт':tag==='rev'?'ревью':tag==='fix'?'фикс':tag}</span>`:'';
+  const d=document.createElement('div');
+  d.className='msg'+(isUser?' me':'');
+  const bubId='b'+Date.now()+Math.random().toString(36).slice(2,7);
+  d.innerHTML=`${isUser?`<span class="msgav av user" style="--c:var(--txt3)">${escHtml(a.mono||'И')}</span>`:av(agentId,a.color,'msgav',a.mono)}
+    <div class="mb">
+      <div class="mh"><span class="mn" style="color:${isUser?'var(--txt2)':a.color}">${escHtml(a.name)}</span><span class="mt">${getTime()}</span>${tagHtml}</div>
+      <div class="bub" id="${bubId}">${html}</div>
+    </div>`;
+  s.appendChild(d); s.scrollTop=s.scrollHeight;
+  return document.getElementById(bubId);
+}
+
+function addThinking(agentId){
+  return addMsg(agentId,'<div class="dots"><span></span><span></span><span></span></div>');
+}
+
+function setArtifact(id,name,content){
+  sessionArtifacts[id]={id,name,content};
+  // обновить sidebar
+  document.querySelectorAll(`.art[data-id="${id}"]`).forEach(el=>el.classList.add('done'));
+  const lbl=document.getElementById('art-count-label');
+  if(lbl) lbl.textContent=Object.keys(sessionArtifacts).length+' / '+ARTIFACT_DEFS.length;
+  const expBtn=document.getElementById('export-btn');
+  if(expBtn) expBtn.disabled=false;
+  // обновить office rail donut
+  if(state.theme==='office') renderRail(THEMES[state.theme]);
+}
+
+function setAgentStatus(agentId,status){
+  const T=THEMES[state.theme];
+  if(T.agents[agentId]) T.agents[agentId].status=status;
+  document.querySelectorAll(`.agent[data-id="${agentId}"] .st`).forEach(el=>{el.className='st '+status;});
+}
+
+// ── CLAUDE API ────────────────────────────────────────────────────────────
+async function claude(system,userContent,historyPairs=[],maxTokens=16000){
+  const systemArr=[{type:'text',text:system,cache_control:{type:'ephemeral'}}];
+  const messages=[...historyPairs,{role:'user',content:userContent}];
+  let res;
+  try{
+    res=await fetch('/api/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,system:systemArr,messages})
+    });
+  }catch(netErr){
+    throw new Error('Сервер недоступен — запустите: node server.js');
+  }
+  const ct=res.headers.get('content-type')||'';
+  if(!ct.includes('application/json')){
+    const body=await res.text();
+    if(body.includes('<!DOCTYPE')||body.includes('<html')){
+      throw new Error('Сервер вернул HTML вместо JSON. Откройте http://localhost:3000 (не file://)');
+    }
+    throw new Error('Неожиданный ответ сервера ('+res.status+'): '+body.slice(0,120));
+  }
+  const data=await res.json();
+  if(data.error) throw new Error('Anthropic API: '+(data.error.message||JSON.stringify(data.error)));
+  if(!data.content?.[0]?.text) throw new Error('Пустой ответ от API (статус '+res.status+')');
+  return data.content[0].text;
+}
+
+// ── runPhase — per-phase error isolation ──────────────────────────────────
+async function runPhase(label,agentId,fn){
+  if(abortPipeline){
+    addMsg(agentId,'<span style="color:var(--err)">⏹ '+escHtml(label)+' — пропущено (остановлено)</span>');
+    return {ok:false,result:null};
+  }
+  setAgentStatus(agentId,'live');
+  try{
+    const result=await fn();
+    return {ok:true,result};
+  }catch(e){
+    console.error(`[${label}]`,e);
+    updatePipelineNode(label,'error');
+    setAgentStatus(agentId,'idle');
+    addMsg(agentId,`<span style="color:var(--err)"><strong>${escHtml(label)} — ошибка:</strong> ${escHtml(e.message)}<br><span style="font-size:10px;color:var(--txt3)">Остальные фазы продолжатся с имеющимися данными</span></span>`);
+    return {ok:false,result:null};
+  }
+}
+
+// ── FULL PIPELINE ─────────────────────────────────────────────────────────
+async function runFullPipeline(query){
+  abortPipeline=false;
+  const stopBtn=document.getElementById('stop-btn');
+  if(stopBtn) stopBtn.style.display='';
+  pipelineState={};
+  renderPipe();
+  // сброс статусов агентов
+  ROLES.forEach(r=>setAgentStatus(r,'idle'));
+
+  // PHASE 1: PM Brief
+  addSep('Фаза 1 — PM постановка задачи');
+  updatePipelineNode('PM Brief','run');
+  const pmBub=addThinking('pm');
+  const pmSys=`Ты — PM в команде Milliy 3.0 (НБУ, Узбекистан). Стек: Java Spring Boot 3, PostgreSQL, iABS, ESB, Redis, JWT, UzCard/Humo/Visa, Android/iOS.
+Напиши структурированный PM Brief:
+## PM Brief
+**Задача:** <одна строка>
+**Контекст:** <2-3 предложения про бизнес-ценность>
+**Scope (в рамках):** <3-4 пункта>
+**Out of scope:** <1-2 пункта>
+**Критерии готовности:** <3 критерия>
+**Приоритет:** High/Medium/Low
+**Оценочный срок:** <X дней>`;
+  const {ok:ph1ok,result:pmResult_}=await runPhase('PM Brief','pm',()=>claude(pmSys,query));
+  const pmResult=pmResult_||'';
+  pmBub.innerHTML=fmt(pmResult);
+  setArtifact('brief','PM Brief',pmResult);
+  if(ph1ok){updatePipelineNode('PM Brief','done');setAgentStatus('pm','done');}
+
+  // PHASE 2: BA
+  addSep('Фаза 2 — Бизнес-анализ (BA_SYSTEM)');
+  updatePipelineNode('BA','run');
+  const baBub=addThinking('ba');
+  const baSys=`Ты — Senior Business Analyst с 10+ годами опыта в банковском секторе СНГ. Специализация: мобильный банкинг, платёжные системы, НБУ.
+Создай ПРОФЕССИОНАЛЬНЫЙ BA артефакт:
+### 1. Executive Summary (бизнес-проблема, решение, метрики)
+### 2. Функциональные требования
+(FR-001..FR-00N | Приоритет: Must/Should/Could | Критерии приёмки в чеклисте. Минимум 8)
+### 3. User Stories
+(US-001: Как [роль]... Acceptance Criteria в Gherkin. Минимум 5)
+### 4. Бизнес-правила (BR-001..., источник: регулятор/политика)
+### 5. NFR (производительность, доступность, безопасность, локализация)
+### 6. Открытые вопросы (таблица: # | Вопрос | Тип | Влияние | Ответственный)
+Терминология НБУ: iABS, MUNIS, HUMO, UzCard, Paynet, My ID. Не задавай вопросов.`;
+  const {ok:ph2ok,result:baResult_}=await runPhase('BA','ba',()=>claude(baSys,`## PM Brief:\n${pmResult}\n\n## Запрос: ${query}`));
+  const baResult=baResult_||'';
+  baBub.innerHTML=fmt(baResult);
+  setArtifact('ba_full','BA Артефакт',baResult);
+  if(ph2ok){updatePipelineNode('BA','done');setAgentStatus('ba','done');}
+
+  // PHASE 3: SA
+  addSep('Фаза 3 — Системный анализ (SA_SYSTEM)');
+  updatePipelineNode('SA','run');
+  const saBub=addThinking('sa');
+  const saSys=`Ты — Senior System Analyst, банковские системы (Java Spring Boot, Kotlin/Swift, НБУ).
+Создай SA артефакт:
+### 1. Архитектурное решение (затрагиваемые сервисы, новые компоненты, паттерн)
+### 2. API контракты
+(\`\`\`[METHOD] /api/v1/[path]\nAuth: Bearer JWT\nRequest: {...}\nResponse 200: {...}\nResponse 4xx: {...}\`\`\` — минимум 3 эндпоинта)
+### 3. Data Model (CREATE TABLE + индексы + constraints)
+### 4. Sequence Diagram (текстовый, Mobile → Gateway → Service → DB/Redis → iABS)
+### 5. NFR (таблица: Параметр | Требование | Обоснование)
+### 6. Оценка трудоёмкости (таблица: Компонент | Backend | Android | iOS | QA)
+### 7. Риски (таблица: Риск | Вероятность | Влияние | Митигация)
+Стек: Java 17 Spring Boot 3, Kotlin 1.9+, Swift 5.9+, PostgreSQL 15, Redis 7.`;
+  const {ok:ph3ok,result:saResult_}=await runPhase('SA','sa',()=>claude(saSys,`## BA:\n${baResult}\n\n## Запрос: ${query}`));
+  const saResult=saResult_||'';
+  saBub.innerHTML=fmt(saResult);
+  setArtifact('sa_full','SA Артефакт',saResult);
+  if(ph3ok){updatePipelineNode('SA','done');setAgentStatus('sa','done');}
+
+  // PHASE 4.1: Backend
+  addSep('Фаза 4 — Разработка: Backend + Android + iOS + UI прототип');
+  updatePipelineNode('Backend','run');
+  const devBub=addThinking('dev');
+  const devSys=`Ты — Backend Dev, Milliy 3.0 (Java Spring Boot 3, PostgreSQL, Redis, JWT).
+Напиши ТОЛЬКО backend-код:
+## Spring Boot Controller
+(Java: @RestController, @RequestMapping, @PreAuthorize, @Operation Swagger, @Valid на DTO)
+## DTO классы (Request/Response с валидацией @NotNull, @Size, @Pattern)
+## Service Layer (@Transactional, idempotency, обработка исключений через @ControllerAdvice)
+## SQL DDL (CREATE TABLE + индексы + constraints строго по SA)
+## Замечания (race condition, idempotency key, rollback, iABS интеграция)
+Код на Java/SQL, комментарии на русском.`;
+  const {ok:ph4ok,result:devResult_}=await runPhase('Backend','dev',()=>claude(devSys,`## SA:\n${saResult}\n\n## BA:\n${baResult}\n\n## Задача: ${query}`));
+  const devResult=devResult_||'';
+  devBub.innerHTML=fmt(devResult);
+  setArtifact('impl','Spring Boot (Backend)',devResult);
+  if(ph4ok) updatePipelineNode('Backend','done');
+
+  // PHASE 4.2: Android
+  updatePipelineNode('Android','run');
+  const devAndBub=addThinking('dev');
+  const devAndSys=`Ты — Android Developer, Milliy 3.0 (Kotlin, Jetpack, MVVM).
+## ViewModel (StateFlow/LiveData, Loading/Success/Error состояния)
+## Repository + Retrofit (interface API строго по SA API контракту, маппинг DTO→DomainModel)
+## UI State sealed class (Loading, Success(data), Error(message), ValidationError)
+## Compose UI (основной экран, обработка всех состояний, LaunchedEffect)
+## Замечания (deep link, biometric/OTP, back stack, error handling)
+Стек: Kotlin 1.9+, Jetpack Compose, Hilt, Retrofit2, Coroutines/Flow.`;
+  const {ok:ph4aok,result:devAndResult_}=await runPhase('Android','dev',()=>claude(devAndSys,`## SA API:\n${saResult.substring(0,3000)}\n\n## BA User Stories:\n${baResult.substring(0,2000)}\n\n## Задача: ${query}`));
+  const devAndResult=devAndResult_||'';
+  devAndBub.innerHTML=fmt(devAndResult);
+  setArtifact('impl_android','Android (Kotlin)',devAndResult);
+  if(ph4aok) updatePipelineNode('Android','done');
+
+  // PHASE 4.3: iOS
+  updatePipelineNode('iOS','run');
+  const devIosBub=addThinking('dev');
+  const devIosSys=`Ты — iOS Developer, Milliy 3.0 (Swift, SwiftUI, MVVM).
+## ViewModel (@Published, async/await, Loading/Success/Error)
+## NetworkService + Codable (URLSession/Alamofire, строго по SA контракту, async throws)
+## SwiftUI View (основной экран, все состояния, @StateObject, навигация)
+## Замечания (Face ID/Touch ID, Combine vs async/await, Keychain, Deep Link)
+Стек: Swift 5.9+, SwiftUI, async-await, URLSession, Keychain.`;
+  const {ok:ph4iok,result:devIosResult_}=await runPhase('iOS','dev',()=>claude(devIosSys,`## SA API:\n${saResult.substring(0,3000)}\n\n## BA User Stories:\n${baResult.substring(0,2000)}\n\n## Задача: ${query}`));
+  const devIosResult=devIosResult_||'';
+  devIosBub.innerHTML=fmt(devIosResult);
+  setArtifact('impl_ios','iOS (Swift)',devIosResult);
+  if(ph4iok) updatePipelineNode('iOS','done');
+
+  // PHASE 4.4: UI Proto
+  updatePipelineNode('UI прото','run');
+  const devBub2=addThinking('dev');
+  const protoSys=`Ты — Frontend Dev, мобильные прототипы. Создай интерактивный HTML-прототип экрана Milliy 3.0.
+- Только HTML + CSS + JS, никаких внешних зависимостей
+- Мобильный вид 375px, тёмная тема (#0d1117), акцент #4f7df0
+- Шапка с кнопкой назад, основной контент по User Stories, кнопка действия
+- Базовая интерактивность: валидация, состояния кнопок, переходы
+Верни ТОЛЬКО блок \`\`\`html ... \`\`\``;
+  const {ok:ph4pok,result:protoResult_}=await runPhase('UI прото','dev',()=>claude(protoSys,`Задача: ${query}\n\nUser Stories:\n${baResult.substring(0,1000)}\n\nAPI:\n${saResult.substring(0,800)}`));
+  const protoResult=protoResult_||'';
+  const htmlMatch=protoResult.match(/```html([\s\S]*?)```/i);
+  const protoHtml=htmlMatch?htmlMatch[1].trim():protoResult.replace(/^```html?\n?/,'').replace(/```$/,'').trim();
+  devBub2.innerHTML='<strong>UI Прототип готов</strong> — нажмите на артефакт в сайдбаре →';
+  setArtifact('proto','UI Прототип',protoHtml);
+  if(ph4ok||ph4aok||ph4iok||ph4pok){updatePipelineNode('UI прото','done');setAgentStatus('dev','done');}
+
+  // PHASE 5: QA
+  addSep('Фаза 5 — QA тестирование (QATC_SYSTEM, 22+ тест-кейсов)');
+  updatePipelineNode('QA (22+)','run');
+  const qaBub=addThinking('qa');
+  const qaSys=`Ты — Senior QA Engineer, банковский мобайл (iOS/Android), НБУ.
+## Стратегия тестирования (In/Out scope, типы, окружения, устройства)
+## Тест-кейсы — Позитивные (минимум 8)
+(TC-001: Название | Приоритет | Платформа | Предусловие | Шаги | Ожидаемый результат | Тестовые данные)
+## Тест-кейсы — Негативные (минимум 6)
+## Тест-кейсы — Граничные значения (минимум 4)
+## Тест-кейсы — Безопасность (минимум 4: без авторизации, истёкший JWT, маскирование, IDOR)
+## Регрессионные тест-кейсы
+## Чеклист перед релизом (Smoke, iOS/Android, нагрузочный, OWASP Mobile Top 10, 3G)
+МИНИМУМ 22 тест-кейса. Тестовые данные — конкретные.`;
+  const {ok:ph5ok,result:qaResult_}=await runPhase('QA (22+)','qa',()=>claude(qaSys,`## BA:\n${baResult}\n\n## SA:\n${saResult}\n\n## Backend (Java):\n${devResult}\n\n## Android (Kotlin):\n${devAndResult.substring(0,2000)}\n\n## iOS (Swift):\n${devIosResult.substring(0,2000)}\n\n## Задача: ${query}`));
+  const qaResult=qaResult_||'';
+  qaBub.innerHTML=fmt(qaResult);
+  setArtifact('tests','Тест-кейсы (22+)',qaResult);
+  if(ph5ok){updatePipelineNode('QA (22+)','done');setAgentStatus('qa','done');}
+
+  // PHASE 6: Dev Fix
+  addSep('Фаза 6 — Dev исправляет замечания QA');
+  updatePipelineNode('Dev фикс','run');
+  const devFixBub=addThinking('dev');
+  const devFixSys=`Ты — Dev Agent, Milliy 3.0. Исправляй замечания QA по всем платформам.
+## Исправленный Backend (только изменённые методы с комментарием что исправлено)
+## Исправленный Android (Kotlin) (если баг относится к Android-слою)
+## Исправленный iOS (Swift) (если баг относится к iOS-слою)
+## Ответ на замечания QA
+(Таблица: ID бага | Платформа: Backend/Android/iOS/All | Статус: Fixed/Won't fix/Postponed | Комментарий)
+Код на Java/Kotlin/Swift, комментарии на русском.`;
+  const devFixMsg=addMsg('dev','','fix');
+  devFixBub.remove();
+  const {ok:ph6ok,result:devFixResult_}=await runPhase('Dev фикс','dev',()=>claude(devFixSys,`## QA:\n${qaResult}\n\n## Backend:\n${devResult}\n\n## Android:\n${devAndResult.substring(0,2000)}\n\n## iOS:\n${devIosResult.substring(0,2000)}\n\n## Задача: ${query}`));
+  const devFixResult=devFixResult_||'';
+  devFixMsg.innerHTML=fmt(devFixResult);
+  setArtifact('fixes','Фикс замечаний',devFixResult);
+  if(ph6ok) updatePipelineNode('Dev фикс','done');
+
+  // PHASE 7: SA Review
+  addSep('Фаза 7 — SA финальное ревью + OpenAPI YAML');
+  updatePipelineNode('SA + OpenAPI','run');
+  const saRevBub=addThinking('sa');
+  const saRevSys=`Ты — SA Agent, Milliy 3.0. Финальное ревью после фикса Dev.
+## Статус API контракта (Approved / Approved with comments / Rejected)
+## Финальный OpenAPI YAML (полный, paths + components/schemas + securitySchemes)
+## Обновлённый Sequence Diagram
+## Checklist готовности (15 пунктов ✅/❌: контракт, безопасность, валидация, логирование, ошибки, NFR, интеграции, тесты, доки, ревью, idempotency, rollback, audit log, маскирование, нагрузочные тесты)`;
+  const {ok:ph7ok,result:saRevResult_}=await runPhase('SA + OpenAPI','sa',()=>claude(saRevSys,`## SA оригинал:\n${saResult}\n\n## Dev фикс:\n${devFixResult}\n\n## QA:\n${qaResult}\n\n## Задача: ${query}`));
+  const saRevResult=saRevResult_||'';
+  saRevBub.innerHTML=fmt(saRevResult);
+  setArtifact('openapi','OpenAPI YAML',saRevResult);
+  if(ph7ok) updatePipelineNode('SA + OpenAPI','done');
+
+  // PHASE 8: PM artifacts
+  addSep('Фаза 8 — PM артефакты (Protocol + Jira + RACI + Tasks)');
+  updatePipelineNode('PM артефакты','run');
+  const pmArtBub=addThinking('pm');
+  const pmArtSys=`Ты — PM, Milliy 3.0. Сформируй пакет PM артефактов. Верни ТОЛЬКО JSON (без markdown):
+{"summary":"...","protocol":"...","jira":"...","raci":"...","risks":"...","team":"...","projekt_tasks":[{"name":"...","duration":0,"level":0,"type":"...","depends_on":""}]}`;
+  const {ok:ph8ok,result:pmArtRaw_}=await runPhase('PM артефакты','pm',()=>claude(pmArtSys,`## Задача: ${query}\n## BA:\n${baResult}\n\n## SA:\n${saResult}\n\n## QA:\n${qaResult}`));
+  const pmArtRaw=pmArtRaw_||'{}';
+  let pmArtData={summary:'',protocol:'',jira:'',raci:'',risks:'',team:'',projekt_tasks:[]};
+  try{let c=pmArtRaw.trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();const m=c.match(/\{[\s\S]*\}/);if(m)c=m[0];pmArtData=JSON.parse(c);}catch(e){}
+  pmArtBub.innerHTML=fmt(pmArtData.summary||'PM артефакты сформированы');
+  const pmPack=[pmArtData.protocol?'## PM Протокол\n'+pmArtData.protocol:'',pmArtData.jira?'## Jira Epics\n'+pmArtData.jira:'',pmArtData.raci?'## RACI\n'+pmArtData.raci:'',pmArtData.risks?'## Риски\n'+pmArtData.risks:'',pmArtData.team?'## Команда\n'+pmArtData.team:''].filter(Boolean).join('\n\n---\n\n');
+  setArtifact('pm_pack','PM пакет',pmPack||pmArtRaw);
+  const tasks=pmArtData.projekt_tasks||[];
+  const csv=['Название,Длительность,Уровень,Тип,Зависимость',...tasks.map(t=>`"${t.name}",${t.duration},${t.level},${t.type},"${t.depends_on}"`)].join('\n');
+  setArtifact('pm_tasks','Tasks CSV',csv);
+  if(ph8ok) updatePipelineNode('PM артефакты','done');
+
+  // PHASE 9: TZ BIZ
+  addSep('Фаза 9 — Бизнесовое ТЗ (TZ_BIZ_SYSTEM)');
+  updatePipelineNode('Бизнесовое ТЗ','run');
+  const tzBub=addThinking('pm');
+  const tzSys=`Ты — Бизнес-аналитик НБУ. Напиши Бизнесовое ТЗ по структуре:
+# Техническое задание · ТЗ-001-2026
+## Реквизиты документа (Приложение: Milliy 3.0, Заказчик: НБУ, Исполнитель: Команда NBU Mobile, Дата, Статус: DRAFT)
+## 1. Введение и назначение
+## 2. Описание предметной области
+## 3. Цели и задачи
+## 4. Требования к функциональности (из FR BA)
+## 5. Требования к интерфейсу (из US BA)
+## 6. Бизнес-правила и ограничения (из BR BA)
+## 7. Нефункциональные требования
+## 8. Критерии приёмки
+## 9. Интеграции и зависимости (из SA)
+## 10. Глоссарий
+Пиши на русском, [ТРЕБУЕТ УТОЧНЕНИЯ] для пробелов. Верни только документ Markdown.`;
+  const {ok:ph9ok,result:tzResult_}=await runPhase('Бизнесовое ТЗ','pm',()=>claude(tzSys,`## Фича: ${query}\n\n## BA:\n${baResult}\n\n## SA (интеграции):\n${saResult.substring(0,2000)}`));
+  const tzResult=tzResult_||'';
+  tzBub.innerHTML='<strong>Бизнесовое ТЗ сформировано</strong> — нажмите на артефакт →';
+  setArtifact('tz_biz','Бизнесовое ТЗ',tzResult);
+  if(ph9ok) updatePipelineNode('Бизнесовое ТЗ','done');
+
+  // PHASE 9.5: Protocol
+  addSep('Фаза 9.5 — Протокол согласования (шаблон НБУ)');
+  const protoBub=addThinking('pm');
+  const protocolSys=`Ты — SA/BA, НБУ. Сформируй Протокол согласования строго по шаблону (Markdown):
+# ПРОТОКОЛ СОГЛАСОВАНИЯ ЦЕЛЕВОЙ СХЕМЫ ПРОЦЕССОВ · MILLIY 3.0
+## Пользовательские сценарии к бизнес-процессу «[НАЗВАНИЕ ИЗ ЗАДАЧИ]»
+---
+## ЦЕЛЬ ДОКУМЕНТА
+[из BA Executive Summary]
+---
+## ОПИСАНИЕ ПРОЦЕССА
+| Параметр | Описание |
+|---|---|
+| Действующие лица | [из SA: User, Front, сервисы] |
+| Цель | [из BA] |
+| Точки входа | [из BA US] |
+| Предусловия | [из BA] |
+| Допустимые ограничения | [из BA BR] |
+| Методы API | [из SA эндпоинты] |
+| Лимиты и ограничения | [из BA NFR + BR] |
+| Статусы успеха | [из BA AC] |
+---
+## ТЕКСТОВОЕ ОПИСАНИЕ БИЗНЕС-ПРОЦЕССА
+### ЧАСТЬ I. [Основной сценарий]
+| № | Действующее лицо | Шаг / Действие | Альтернативный сценарий |
+|---|---|---|---|
+[минимум 8-10 строк из BA сценариев]
+---
+## SEQUENCE DIAGRAM
+[PlantUML из SA]
+---
+## ЛИСТ СОГЛАСОВАНИЯ
+| Роль | ФИО | Дата | Подпись |
+|---|---|---|---|
+| PM | | | |
+| BA | | | |
+| SA | | | |
+| Dev Lead | | | |
+| QA Lead | | | |
+| Заказчик (НБУ) | | | |
+---
+*Agent Studio v4 · Milliy 3.0 · НБУ*
+Заполняй строго из BA + SA. Верни только документ Markdown.`;
+  const {ok:ph95ok,result:protocolResult_}=await runPhase('Протокол согласования','pm',()=>claude(protocolSys,`## Задача: ${query}\n\n## BA:\n${baResult}\n\n## SA:\n${saResult}`));
+  const protocolResult=protocolResult_||'';
+  protoBub.innerHTML='<strong>Протокол согласования сформирован</strong> — нажмите на артефакт →';
+  setArtifact('protocol','Протокол согласования',protocolResult);
+  // ph95ok: dot pm не трогаем (phase 1 уже выставила done; ошибка здесь не должна перебивать)
+
+  // PHASE 10: PM Final
+  addSep('Фаза 10 — PM финальное утверждение');
+  updatePipelineNode('PM финал','run');
+  const pmFinBub=addThinking('pm');
+  const pmFinSys=`Ты — PM, Milliy 3.0. Финальный пакет для команды и заказчика (НБУ).
+## Резюме для заказчика (НБУ) (4-5 предложений: что реализуется, ценность, метрики, сроки)
+## Состав пакета артефактов (список с кратким описанием каждого)
+## Ключевые риски (топ-3 с митигацией)
+## Следующие шаги (5 action items: исполнитель, срок, результат)
+## Статус: APPROVED ✅
+Официальный деловой язык, русский.`;
+  const {ok:ph10ok,result:pmFinResult_}=await runPhase('PM финал','pm',()=>claude(pmFinSys,`## Brief:\n${pmResult}\n\n## BA summary:\n${baResult.substring(0,500)}\n\n## SA ревью:\n${saRevResult.substring(0,500)}\n\n## QA:\n${qaResult.substring(0,500)}\n\n## PM Summary: ${pmArtData.summary}\n\n## Задача: ${query}`));
+  const pmFinResult=pmFinResult_||'';
+  const artNames=Object.values(sessionArtifacts).map(a=>a.name);
+  const pkgHtml=`${fmt(pmFinResult)}
+  <div class="pkg-block">
+    <div class="pkg-title">📦 Финальный пакет — ${artNames.length} артефактов</div>
+    <div class="pkg-grid">${artNames.map(n=>`<div class="pkg-item">📄 ${escHtml(n)}</div>`).join('')}</div>
+    <div class="pkg-actions">
+      <button class="pkg-btn" onclick="exportPackage()">⬇ Скачать .md</button>
+      <button class="pkg-btn" onclick="exportCsv()">⬇ Tasks .csv</button>
+      <button class="pkg-btn primary" onclick="copyPackage()">📋 Копировать</button>
+    </div>
+  </div>`;
+  pmFinBub.innerHTML=pkgHtml;
+  setArtifact('final','Финальный пакет',pmFinResult);
+  if(ph10ok){updatePipelineNode('PM финал','done');setAgentStatus('pm','done');}
+
+  chatHistory.push({role:'assistant',content:`[COMPLETE — ${artNames.length} артефактов] ${pmFinResult}`});
+  await saveCurrentSession(query);
+  renderRail(THEMES[state.theme]);
+}
+
+// ── SEND ──────────────────────────────────────────────────────────────────
+async function sendMessage(){
+  const ta=document.getElementById('dock-input');
+  const q=(ta?ta.value:'').trim();
+  if(!q||isRunning) return;
+  if(ta){ta.value='';ta.style.height='auto';}
+  isRunning=true;
+  renderDock(THEMES[state.theme]);
+  addMsg('user',escHtml(q));
+  try{
+    if(state.agent==='all') await runFullPipeline(q);
+    else await runSingleAgent(state.agent,q);
+  }catch(e){
+    addMsg('pm',`<span style="color:var(--err)">Ошибка: ${escHtml(e.message)}</span>`);
+  }finally{
+    isRunning=false;
+    abortPipeline=false;
+    const sb2=document.getElementById('stop-btn');
+    if(sb2) sb2.style.display='none';
+    renderDock(THEMES[state.theme]);
+  }
+}
+
+// ── SINGLE AGENT ──────────────────────────────────────────────────────────
+async function runSingleAgent(agentId,query){
+  abortPipeline=false;
+  abortPipeline = false;
+  const prompts={
+    pm:`Ты — PM Milliy 3.0 (НБУ). Отвечай как PM: брифы, roadmap, приоритизация, риски. Markdown.`,
+    ba:`Ты — BA Milliy 3.0 (НБУ). Пиши User Stories (Gherkin AC), бизнес-правила, BPMN. Markdown.`,
+    sa:`Ты — SA Milliy 3.0 (Spring Boot 3, PostgreSQL, iABS, Redis, JWT). Пиши API (таблицы), PlantUML, DDL. Markdown.`,
+    dev:`Ты — Dev Milliy 3.0 (Java Spring Boot 3, Kotlin, Swift, PostgreSQL, Redis). Пиши код. Markdown.`,
+    qa:`Ты — QA Milliy 3.0. Пиши тест-кейсы (таблицы), баг-репорты, чек-листы. Markdown.`,
+  };
+  const T=THEMES[state.theme];
+  const a=T.agents[agentId];
+  setAgentStatus(agentId,'live');
+  const bub=addThinking(agentId);
+  try{
+    const result=await claude(prompts[agentId]||prompts.ba,query,chatHistory.slice(-6));
+    bub.innerHTML=fmt(result);
+    setAgentStatus(agentId,'done');
+    chatHistory.push({role:'user',content:query},{role:'assistant',content:result});
+  }catch(e){
+    bub.innerHTML=`<span style="color:var(--err)">Ошибка: ${escHtml(e.message)}</span>`;
+    setAgentStatus(agentId,'idle');
+  }
+}
+
+// ── ARTIFACT MODAL ────────────────────────────────────────────────────────
+function showArtifactModal(id){
+  const a=sessionArtifacts[id];
+  if(!a) return;
+  // Создаём временный модал
+  const old=document.getElementById('art-modal');
+  if(old) old.remove();
+  const m=document.createElement('div');
+  m.id='art-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center';
+  m.onclick=e=>{if(e.target===m) m.remove();};
+  if(id==='proto'){
+    const esc=(a.content||'').replace(/"/g,'&quot;');
+    m.innerHTML=`<div style="background:var(--bg2);border:0.5px solid var(--line2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:90vh">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--disp);color:var(--gold);font-size:13px">UI ПРОТОТИП</span><button onclick="document.getElementById('art-modal').remove()" style="margin-left:auto;background:none;border:0.5px solid var(--line2);color:var(--txt2);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--ui)">✕</button><button onclick="openProtoNew()" class="arch-load-btn">⛶ Открыть</button><button onclick="downloadArtifact('proto')" class="art-dl-btn">⬇ .html</button></div>
+      <div style="background:#1a1a2e;border-radius:12px;padding:16px;display:flex;justify-content:center">
+        <div style="border-radius:10px;overflow:hidden;box-shadow:0 0 0 7px #222,0 0 0 9px #333">
+          <iframe sandbox="allow-scripts allow-forms" style="width:375px;height:660px;border:none;display:block" srcdoc="${esc}"></iframe>
+        </div>
+      </div></div>`;
+  } else {
+    const plain=(a.content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    m.innerHTML=`<div style="background:var(--bg2);border:0.5px solid var(--line2);border-radius:12px;width:720px;max-width:92vw;height:80vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px">
+        <span style="font-family:var(--disp);color:var(--gold);font-size:13px;text-transform:var(--disp-up)">${escHtml(a.name)}</span>
+        <button onclick="document.getElementById('art-modal').remove()" style="margin-left:auto;background:none;border:0.5px solid var(--line2);color:var(--txt2);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--ui)">✕</button>
+        <button onclick="downloadArtifact('${id}')" class="art-dl-btn">⬇ .md</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--txt2);white-space:pre-wrap">${plain}</div></div>`;
+  }
+  document.body.appendChild(m);
+}
+
+function openProtoNew(){const a=sessionArtifacts['proto'];if(!a)return;const w=window.open('','_blank');w.document.write(a.content);w.document.close();}
+
+function downloadArtifact(id){
+  const a=sessionArtifacts[id];if(!a)return;
+  const isHtml=id==='proto';
+  const blob=new Blob([a.content],{type:isHtml?'text/html':'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const el=document.createElement('a');el.href=url;el.download=a.name.replace(/\s+/g,'_')+(isHtml?'.html':'.md');el.click();URL.revokeObjectURL(url);
+}
+
+function stopPipeline(){
+  abortPipeline=true;
+  const sb=document.getElementById('stop-btn');
+  if(sb) sb.textContent='⏹ Остановка...';
+}
+
+function exportPackage(){
+  if(!Object.keys(sessionArtifacts).length){alert('Нет артефактов');return;}
+  const text=Object.values(sessionArtifacts).map(a=>`# ${a.name}\n\n${a.content}`).join('\n\n---\n\n');
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const el=document.createElement('a');el.href=url;el.download='Milliy3_Package.md';el.click();URL.revokeObjectURL(url);
+}
+
+function exportCsv(){
+  const a=sessionArtifacts['pm_tasks'];if(!a){alert('Tasks CSV ещё не готов');return;}
+  const blob=new Blob([a.content],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const el=document.createElement('a');el.href=url;el.download='Milliy3_Tasks.csv';el.click();URL.revokeObjectURL(url);
+}
+
+function copyPackage(){
+  const text=Object.values(sessionArtifacts).map(a=>`# ${a.name}\n\n${a.content}`).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).then(()=>alert('Скопировано!'));
+}
+
+// ── ARCHIVE ───────────────────────────────────────────────────────────────
+async function loadArchive(){
+  try{const r=await fetch('/api/sessions');if(!r.ok)return;archiveSessions=await r.json();renderArchiveList(archiveSessions);}
+  catch(e){document.getElementById('arch-list').innerHTML='<div class="arch-empty">Сервер недоступен</div>';}
+}
+
+function renderArchiveList(sessions){
+  const list=document.getElementById('arch-list');
+  if(!sessions||!sessions.length){list.innerHTML='<div class="arch-empty">Нет сохранённых сессий</div>';return;}
+  list.innerHTML=sessions.map(s=>{
+    const d=new Date(s.timestamp).toLocaleString('ru',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<div class="arch-item${s.id===archiveSelectedId?' selected':''}" id="architem-${s.id}" onclick="selectArchiveSession('${s.id}')">
+      <div class="arch-item-query">${escHtml(s.query)}</div>
+      <div class="arch-item-meta"><span>${d}</span><span>${s.artifactCount||0} арт.</span>
+      <span class="arch-item-del" onclick="event.stopPropagation();deleteArchiveSession('${s.id}')">🗑</span></div></div>`;
+  }).join('');
+}
+
+function filterArchive(q){renderArchiveList(q?archiveSessions.filter(s=>s.query.toLowerCase().includes(q.toLowerCase())):archiveSessions);}
+
+async function selectArchiveSession(id){
+  archiveSelectedId=id;
+  document.querySelectorAll('.arch-item').forEach(el=>el.classList.remove('selected'));
+  const el=document.getElementById('architem-'+id);if(el)el.classList.add('selected');
+  document.getElementById('arch-detail').innerHTML='<div class="arch-empty">⏳ Загрузка...</div>';
+  try{const r=await fetch('/api/sessions/'+id);const session=await r.json();renderArchiveDetail(session);}
+  catch(e){document.getElementById('arch-detail').innerHTML='<div class="arch-empty" style="color:var(--err)">Ошибка загрузки</div>';}
+}
+
+function renderArchiveDetail(session){
+  _archiveSessionData=session;
+  const arts=Object.values(session.artifacts||{});
+  if(!arts.length){document.getElementById('arch-detail').innerHTML='<div class="arch-empty">Нет артефактов</div>';return;}
+  const d=new Date(session.timestamp).toLocaleString('ru',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  archiveSelectedArtTab=arts[0].id;
+  document.getElementById('arch-detail').innerHTML=`
+    <div class="arch-detail-header">
+      <div class="arch-detail-query">${escHtml(session.query)}</div>
+      <div class="arch-detail-meta">${d} · ${arts.length} артефактов</div>
+    </div>
+    <div class="arch-art-tabs" id="arch-tabs">${arts.map(a=>`<div class="arch-art-tab${a.id===arts[0].id?' active':''}" onclick="switchArchiveTab('${a.id}',this)">${escHtml(a.name)}</div>`).join('')}</div>
+    <div class="arch-art-content" id="arch-art-view">
+      <div class="arch-art-text">${escHtml(arts[0].content||'')}</div>
+    </div>
+    <div class="arch-art-actions">
+      <button class="arch-load-btn" onclick="loadSessionIntoStudio()">↩ Открыть в Studio</button>
+      <button class="art-dl-btn" onclick="downloadArchiveArt()">⬇ Артефакт</button>
+      <button class="art-dl-btn" onclick="downloadArchiveAll()">📦 Скачать всё</button>
+    </div>`;
+}
+
+function switchArchiveTab(artId,el){
+  archiveSelectedArtTab=artId;
+  document.querySelectorAll('.arch-art-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const session=_archiveSessionData;
+  const art=session&&session.artifacts&&session.artifacts[artId];
+  const view=document.getElementById('arch-art-view');if(!view)return;
+  if(artId==='proto'&&art){
+    const esc=(art.content||'').replace(/"/g,'&quot;');
+    view.innerHTML=`<div style="display:flex;justify-content:center;padding:12px;background:#1a1a2e;border-radius:10px"><iframe sandbox="allow-scripts allow-forms" style="width:375px;height:580px;border:none;border-radius:8px" srcdoc="${esc}"></iframe></div>`;
+  } else {
+    view.innerHTML=`<div class="arch-art-text">${escHtml(art&&art.content||'')}</div>`;
+  }
+}
+
+function downloadArchiveArt(){
+  const session=_archiveSessionData;
+  const art=session&&session.artifacts&&session.artifacts[archiveSelectedArtTab];if(!art)return;
+  const isHtml=archiveSelectedArtTab==='proto';
+  const blob=new Blob([art.content],{type:isHtml?'text/html':'text/plain'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=art.name.replace(/\s+/g,'_')+(isHtml?'.html':'.md');a.click();URL.revokeObjectURL(url);
+}
+
+function downloadArchiveAll(){
+  const session=_archiveSessionData;if(!session||!session.artifacts)return;
+  const text=Object.values(session.artifacts).map(a=>`# ${a.name}\n\n${a.content}`).join('\n\n---\n\n');
+  const blob=new Blob([text],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Session_'+archiveSelectedId.slice(0,8)+'.md';a.click();URL.revokeObjectURL(url);
+}
+
+function loadSessionIntoStudio(){
+  const session=_archiveSessionData;if(!session)return;
+  sessionArtifacts={};
+  if(session.artifacts) Object.entries(session.artifacts).forEach(([id,art])=>{sessionArtifacts[id]=art;});
+  renderSidebar(THEMES[state.theme]);
+  renderTop(THEMES[state.theme]);
+  renderRail(THEMES[state.theme]);
+  addSep('Загружена сессия из архива: '+session.query);
+  closeArchive();
+}
+
+async function deleteArchiveSession(id){
+  if(!confirm('Удалить сессию?'))return;
+  await fetch('/api/sessions/'+id,{method:'DELETE'});
+  if(archiveSelectedId===id){archiveSelectedId=null;document.getElementById('arch-detail').innerHTML='<div class="arch-empty">← Выберите сессию</div>';}
+  await loadArchive();
+}
+
+function openArchive(){document.getElementById('arch-overlay').classList.add('open');loadArchive();}
+function closeArchive(){document.getElementById('arch-overlay').classList.remove('open');}
+
+async function saveCurrentSession(query){
+  if(!Object.keys(sessionArtifacts).length)return;
+  const session={id:'sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),query,timestamp:new Date().toISOString(),artifacts:JSON.parse(JSON.stringify(sessionArtifacts))};
+  try{await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(session)});
+  }catch(e){console.warn('Save session:',e.message);}
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+// ── Проверка сервера при старте ───────────────────────────────────────────
+async function checkServer(){
+  // Если открыто через file:// — сразу предупреждаем
+  if(location.protocol==='file:'){
+    showServerBanner('file-error',
+      '⚠️ Открыто как файл',
+      'Откройте через сервер: запустите <code>node server.js</code>, затем перейдите на <b>http://localhost:3000/agent_studio_v4.html</b>');
+    return;
+  }
+  try{
+    const r=await fetch('/api/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1,
+        system:'ping',messages:[{role:'user',content:'ping'}]})
+    });
+    const ct=r.headers.get('content-type')||'';
+    if(!ct.includes('application/json')){
+      showServerBanner('html-error',
+        '⚠️ Прокси не отвечает',
+        'server.js вернул HTML. Перезапустите: <code>node server.js</code> и обновите страницу.');
+      return;
+    }
+    const d=await r.json();
+    // Проверяем API ключ
+    if(d.error&&d.error.type==='authentication_error'){
+      showServerBanner('key-error',
+        '🔑 API ключ не задан',
+        'Запустите с ключом: <code>set ANTHROPIC_API_KEY=sk-ant-... && node server.js</code>');
+      return;
+    }
+    // Всё ок — убираем баннер если был
+    hideBanner();
+  }catch(e){
+    showServerBanner('net-error',
+      '⚠️ Сервер не запущен',
+      'Запустите в терминале: <code>node server.js</code>, затем обновите страницу.');
+  }
+}
+
+function showServerBanner(type,title,msg){
+  let b=document.getElementById('server-banner');
+  if(!b){
+    b=document.createElement('div');b.id='server-banner';
+    b.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;background:#1a0a0a;border:1px solid var(--err);border-radius:10px;padding:14px 20px;max-width:520px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:var(--ui);font-size:13px;color:var(--txt)';
+    document.body.appendChild(b);
+  }
+  b.innerHTML=`<div style="display:flex;align-items:flex-start;gap:12px">
+    <div style="flex:1">
+      <div style="font-weight:600;color:var(--err);margin-bottom:6px">${title}</div>
+      <div style="color:var(--txt2);line-height:1.6">${msg}</div>
+    </div>
+    <div onclick="hideBanner()" style="cursor:pointer;color:var(--txt3);font-size:18px;line-height:1;flex-shrink:0">✕</div>
+  </div>`;
+}
+
+function hideBanner(){const b=document.getElementById('server-banner');if(b)b.remove();}
+
+document.querySelectorAll('.sw-btn').forEach(b=>{b.addEventListener('click',()=>{state.theme=b.dataset.theme;Sound.play('switch');render();});});
+const sndBtn=document.getElementById('soundToggle');
+if(sndBtn) sndBtn.addEventListener('click',()=>{Sound.on=!Sound.on;Sound.init();sndBtn.textContent=Sound.on?'🔊':'🔇';sndBtn.classList.toggle('off',!Sound.on);if(Sound.on)Sound.play('switch');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeArchive();});
+
+render();
+checkServer();
+</script>
+</body>
+</html>
